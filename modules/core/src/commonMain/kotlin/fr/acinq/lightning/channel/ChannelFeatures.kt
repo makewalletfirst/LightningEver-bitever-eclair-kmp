@@ -55,14 +55,14 @@ sealed class ChannelType {
             override val name: String get() = "anchor_outputs"
             override val features: Set<Feature> get() = setOf(Feature.StaticRemoteKey, Feature.AnchorOutputs)
             override val permanentChannelFeatures: Set<Feature> get() = setOf()
-            override val commitmentFormat: Transactions.CommitmentFormat get() = Transactions.CommitmentFormat.AnchorOutputs
+            override val commitmentFormat: Transactions.CommitmentFormat get() = Transactions.CommitmentFormat.SimpleTaprootChannels
         }
 
         object AnchorOutputsZeroReserve : SupportedChannelType() {
             override val name: String get() = "anchor_outputs_zero_reserve"
             override val features: Set<Feature> get() = setOf(Feature.StaticRemoteKey, Feature.AnchorOutputs, Feature.ZeroReserveChannels)
             override val permanentChannelFeatures: Set<Feature> get() = setOf(Feature.ZeroReserveChannels)
-            override val commitmentFormat: Transactions.CommitmentFormat get() = Transactions.CommitmentFormat.AnchorOutputs
+            override val commitmentFormat: Transactions.CommitmentFormat get() = Transactions.CommitmentFormat.SimpleTaprootChannels
         }
 
         object SimpleTaprootChannels : SupportedChannelType() {
@@ -77,7 +77,7 @@ sealed class ChannelType {
         override val name: String get() = "0x${Hex.encode(featureBits.toByteArray())}"
         override val features: Set<Feature> get() = featureBits.activated.keys
         override val permanentChannelFeatures: Set<Feature> get() = setOf()
-        override val commitmentFormat: Transactions.CommitmentFormat get() = Transactions.CommitmentFormat.AnchorOutputs
+        override val commitmentFormat: Transactions.CommitmentFormat get() = Transactions.CommitmentFormat.SimpleTaprootChannels
     }
 
     companion object {

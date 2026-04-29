@@ -1,35 +1,24 @@
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.10-blue.svg?style=flat&logo=kotlin)](http://kotlinlang.org)
-[![Maven Central](https://img.shields.io/maven-central/v/fr.acinq.lightning/lightning-kmp-core)](https://search.maven.org/search?q=g:fr.acinq.lightning%20a:lightning-kmp*)
-![Github Actions](https://github.com/ACINQ/lightning-kmp/actions/workflows/test.yml/badge.svg)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+# LightningEver-bitever-eclair-kmp (Lightning Engine)
 
-**lightning-kmp** is a [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html) implementation of the Lightning Network (see the [Lightning Network Specifications (BOLTs)](https://github.com/lightning/bolts)) optimized for mobile wallets. It can run on many platforms, including mobile devices (iOS and Android).
+LightningEver 앱의 핵심 라이트닝 엔진 라이브러리입니다. 
+ACINQ eclair-kmp를 기반으로 비트에버(BEC) 체인과의 SPV 동기화를 위해 개조되었습니다.
 
-It is different from [eclair](https://github.com/ACINQ/eclair) which is an implementation optimized for servers (routing nodes).
-It shares a lot of architecture choices with eclair though, which comes from years of experience developing one of the main lightning implementations.
-But it optimizes completely different scenarios, as wallets will not relay payments but rather send and receive them.
-Read [this article](https://medium.com/@ACINQ/when-ios-cdf798d5f8ef) for more details.
+## 🚀 핵심 패치 사항
+- **Header Pass-through (헤더 검증 패스):** `ElectrumClient.kt`를 수정하여 일렉트럼 서버가 전달하는 블록 헤더를 검증 과정 없이 수용하도록 패치. 이를 통해 비트코인 메인넷과 다른 체크포인트를 가진 비트에버 체인에서도 지갑이 정상 작동함.
+- **KMP Support:** Kotlin Multiplatform을 지원하여 Android 및 iOS에서 동일한 라이트닝 로직 공유.
 
-**lightning-kmp** is used in [Phoenix](https://phoenix.acinq.co/), the best non-custodial Lightning Wallet!
+## 🛠 기술 스택
+- **언어:** Kotlin (KMP)
+- **빌드 도구:** Gradle (Kotlin DSL)
+- **주요 의존성:** `bitcoin-kmp`
+- **타겟:** JVM (Android), Linux, iOS (Optional)
 
-## Installation
+## 🏗 빌드 및 배포
+로컬 환경에 라이브러리를 설치하려면 다음 명령을 실행합니다.
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+./gradlew publishToMavenLocal -x allTests
+```
 
-See instructions [here](https://github.com/ACINQ/lightning-kmp/blob/master/BUILD.md) to build and test the library.
-
-## Recovering on-chain funds
-
-See instructions [here](./RECOVERY.md) to recover on-chain funds.
-
-## Contributing
-
-We use GitHub for bug tracking. Search the existing issues for your bug and create a new one if needed.
-
-Contribute to the project by submitting pull requests.
-Review is done by members of the ACINQ team.
-Please read the guidelines [here](https://github.com/ACINQ/lightning-kmp/blob/master/CONTRIBUTING.md).
-
-## Resources
-
-* [1] [The Bitcoin Lightning Network: Scalable Off-Chain Instant Payments](https://lightning.network/lightning-network-paper.pdf) by Joseph Poon and Thaddeus Dryja
-* [2] [Reaching The Ground With Lightning](https://github.com/ElementsProject/lightning/blob/master/doc/miscellaneous/deployable-lightning.pdf) by Rusty Russell
-* [3] [When Phoenix on iOS?](https://medium.com/@ACINQ/when-ios-cdf798d5f8ef) - A blog post detailing why we created this library
+## ⚙️ CI/CD (GitHub Actions)
+`.github/workflows/build.yml` 파일을 통해 Kotlin Multiplatform 빌드 유효성을 검사합니다.

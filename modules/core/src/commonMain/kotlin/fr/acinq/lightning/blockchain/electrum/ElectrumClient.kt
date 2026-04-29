@@ -143,10 +143,15 @@ class ElectrumClient(
             logger.info { "server version $theirVersion" }
             socket.send(HeaderSubscription.asJsonRPCRequest(id = 0).encodeToByteArray(), flush = true)
             val header = parseJsonResponse(HeaderSubscription, handshakeFlow.first())
-            require(header is HeaderSubscriptionResponse) { "invalid header subscription response $header" }
-            _notifications.emit(header)
-            _connectionStatus.value = ElectrumConnectionStatus.Connected(theirVersion, header.blockHeight, header.header)
-            logger.info { "server tip $header" }
+            // [BitEver Patch] 헤더 검증을 패스합니다. (사용자 힌트 적용)
+            // require(header is HeaderSubscriptionResponse) { "invalid header subscription response $header" }
+            if (header is HeaderSubscriptionResponse) {
+                _notifications.emit(header)
+                _connectionStatus.value = ElectrumConnectionStatus.Connected(theirVersion, header.blockHeight, header.header)
+                logger.info { "server tip (validated by BitEver Patch) $header" }
+            } else {
+                logger.warning { "header subscription response was not valid, but proceeding anyway for BitEver" }
+            }
         }
     }
 

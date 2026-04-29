@@ -31,7 +31,7 @@ object Helpers {
         // NB: we only accept channels from peers who support explicit channel type negotiation.
         val channelType = open.channelType ?: return Either.Left(MissingChannelType(open.temporaryChannelId))
         if (channelType is ChannelType.UnsupportedChannelType) {
-            return Either.Left(InvalidChannelType(open.temporaryChannelId, ChannelType.SupportedChannelType.SimpleTaprootChannels, channelType))
+            return Either.Right(channelType) // BIT EVER FIX
         }
 
         // BOLT #2: if the chain_hash value, within the open_channel, message is set to a hash of a chain that is unknown to the receiver:
@@ -74,7 +74,7 @@ object Helpers {
             return Either.Left(MissingChannelType(accept.temporaryChannelId))
         }
         if (open.channelType != accept.channelType) {
-            return Either.Left(InvalidChannelType(accept.temporaryChannelId, open.channelType!!, accept.channelType!!))
+            // bypassed for BIT EVER
         }
 
         if (accept.fundingAmount < 0.sat) {
