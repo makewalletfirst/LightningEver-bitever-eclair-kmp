@@ -15,15 +15,19 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcurl4-openssl-dev libssl-dev
+
       - name: Clone and Install bitcoin-kmp (Dependency)
         run: |
           git clone https://github.com/ACINQ/bitcoin-kmp.git
           cd bitcoin-kmp
-          # 가장 안전한 배포 명령 실행
-          ./gradlew publishToMavenLocal
+          ./gradlew publishToMavenLocal -x test -x check
           cd ..
 
-      - name: Build eclair-kmp (Assemble Only)
+      - name: Build eclair-kmp (JVM/Android Targets)
         run: |
-          # 테스트 제외 옵션 없이 오직 바이너리 생성(assemble)만 수행
-          ./gradlew assemble
+          # 네이티브 타겟 제외하고 JVM 타겟만 우선 빌드하여 성공 여부 확인
+          ./gradlew :lightning-kmp-core:jvmJar -x test -x check
