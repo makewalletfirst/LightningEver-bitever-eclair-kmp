@@ -19,11 +19,11 @@ jobs:
         run: |
           git clone https://github.com/ACINQ/bitcoin-kmp.git
           cd bitcoin-kmp
-          # 'test' 태스크가 없을 수 있으므로 옵션 없이 실행하거나 안전한 스킵 사용
-          ./gradlew publishToMavenLocal -x check
+          # 멀티플랫폼 프로젝트에서는 'allTests' 또는 'check'를 제외합니다.
+          ./gradlew publishToMavenLocal -x allTests -x check
           cd ..
 
       - name: Build eclair-kmp (Assemble Only)
         run: |
-          # 모든 테스트 관련 작업을 명시적으로 제외하고 assemble만 수행합니다.
-          ./gradlew assemble -x test -x jvmTest -x linuxX64Test -x linuxArm64Test -x check
+          # 'test' 대신 'allTests'를 제외하여 빌드만 수행합니다.
+          ./gradlew assemble -x allTests -x check
