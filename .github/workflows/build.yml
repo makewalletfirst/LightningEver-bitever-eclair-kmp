@@ -24,10 +24,11 @@ jobs:
         run: |
           git clone https://github.com/ACINQ/bitcoin-kmp.git
           cd bitcoin-kmp
-          ./gradlew publishToMavenLocal -x test -x check
+          # 'test' 대신 'check'를 제외하는 것이 멀티플랫폼 프로젝트에서 안전합니다.
+          ./gradlew publishToMavenLocal -x check
           cd ..
 
-      - name: Build eclair-kmp (JVM/Android Targets)
+      - name: Build eclair-kmp (JVM Target)
         run: |
-          # 네이티브 타겟 제외하고 JVM 타겟만 우선 빌드하여 성공 여부 확인
-          ./gradlew :lightning-kmp-core:jvmJar -x test -x check
+          # 여기서도 존재하지 않는 'test' 제외 대신 'check'와 'allTests'를 제외합니다.
+          ./gradlew :lightning-kmp-core:jvmJar -x check -x allTests
