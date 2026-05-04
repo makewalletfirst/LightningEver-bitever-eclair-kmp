@@ -24,6 +24,7 @@ object Scripts {
     fun der(sig: ByteVector64, sigHash: Int): ByteVector = Crypto.compact2der(sig).concat(sigHash.toByte())
 
     fun sort(pubkeys: List<PublicKey>): List<PublicKey> = pubkeys.sortedWith { p1, p2 -> LexicographicalOrdering.compare(p1, p2) }
+    fun sortNonces(nonces: List<Pair<PublicKey, fr.acinq.bitcoin.crypto.musig2.IndividualNonce>>): List<fr.acinq.bitcoin.crypto.musig2.IndividualNonce> = nonces.sortedWith { p1, p2 -> LexicographicalOrdering.compare(p1.first, p2.first) }.map { it.second }
 
     private fun htlcRemoteSighash(commitmentFormat: Transactions.CommitmentFormat): Int = when (commitmentFormat) {
         is Transactions.CommitmentFormat.AnchorOutputs -> SIGHASH_SINGLE or SIGHASH_ANYONECANPAY

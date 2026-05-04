@@ -14,7 +14,7 @@ object NonceGenerator {
      * @return a deterministic nonce used to sign our local commit tx: its public part is sent to our peer.
      */
     fun verificationNonce(fundingTxId: TxId, fundingPrivKey: PrivateKey, remoteFundingPubKey: PublicKey, commitIndex: Long): Transactions.LocalNonce {
-        val nonces = Musig2.generateNonceWithCounter(commitIndex, fundingPrivKey, listOf(fundingPrivKey.publicKey(), remoteFundingPubKey), null, fundingTxId.value)
+        val nonces = Musig2.generateNonceWithCounter(commitIndex, fundingPrivKey, fr.acinq.lightning.transactions.Scripts.sort(listOf(fundingPrivKey.publicKey(), remoteFundingPubKey)), null, fundingTxId.value)
         return Transactions.LocalNonce(nonces.first, nonces.second)
     }
 
@@ -23,7 +23,7 @@ object NonceGenerator {
      */
     fun signingNonce(localFundingPubKey: PublicKey, remoteFundingPubKey: PublicKey, fundingTxId: TxId): Transactions.LocalNonce {
         val sessionId = randomBytes32()
-        val nonces = Musig2.generateNonce(sessionId, Either.Right(localFundingPubKey), listOf(localFundingPubKey, remoteFundingPubKey), null, fundingTxId.value)
+        val nonces = Musig2.generateNonce(sessionId, Either.Right(localFundingPubKey), fr.acinq.lightning.transactions.Scripts.sort(listOf(localFundingPubKey, remoteFundingPubKey)), null, fundingTxId.value)
         return Transactions.LocalNonce(nonces.first, nonces.second)
     }
 }

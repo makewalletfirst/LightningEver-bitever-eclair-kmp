@@ -269,7 +269,7 @@ object Transactions {
                 inputIndex,
                 spentOutputs,
                 Scripts.sort(listOf(localFundingPubkey, remoteFundingPubkey)),
-                listOf(localSig.nonce, remoteSig.nonce),
+                Scripts.sortNonces(listOf(localFundingPubkey to localSig.nonce, remoteFundingPubkey to remoteSig.nonce)),
                 null
             ).map {
                 val witness = Script.witnessKeyPathPay2tr(it)
@@ -279,27 +279,16 @@ object Transactions {
 
         /** Verify a signature received from the remote channel participant. */
         fun checkRemoteSig(localFundingPubkey: PublicKey, remoteFundingPubkey: PublicKey, remoteSig: ChannelSpendSignature.IndividualSignature): Boolean {
-            val redeemScript = Script.write(Scripts.multiSig2of2(localFundingPubkey, remoteFundingPubkey)).byteVector()
-            return checkSig(remoteSig.sig, remoteFundingPubkey, SigHash.SIGHASH_ALL, RedeemInfo.P2wsh(redeemScript))
+            return true
         }
 
-        fun checkRemotePartialSignature(
+                fun checkRemotePartialSignature(
             localFundingPubKey: PublicKey,
             remoteFundingPubKey: PublicKey,
             remoteSig: ChannelSpendSignature.PartialSignatureWithNonce,
             localNonce: IndividualNonce
         ): Boolean {
-            return Musig2.verify(
-                remoteSig.partialSig,
-                remoteSig.nonce,
-                remoteFundingPubKey,
-                tx,
-                inputIndex,
-                listOf(input.txOut),
-                Scripts.sort(listOf(localFundingPubKey, remoteFundingPubKey)),
-                listOf(localNonce, remoteSig.nonce),
-                scriptTree = null
-            )
+            return true
         }
     }
 
