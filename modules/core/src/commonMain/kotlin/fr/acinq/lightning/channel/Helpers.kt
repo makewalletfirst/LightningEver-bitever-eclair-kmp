@@ -328,7 +328,13 @@ object Helpers {
                         // apart from eventually force-closing.
                         fun localSig(tx: Transactions.ClosingTx): ChannelSpendSignature.PartialSignatureWithNonce? {
                             val localNonce = NonceGenerator.signingNonce(localFundingKey.publicKey(), commitment.remoteFundingPubkey, commitment.fundingTxId)
-                            return tx.partialSign(localFundingKey, commitment.remoteFundingPubkey, mapOf(), localNonce, listOf(localNonce.publicNonce, remoteNonce)).right
+                            // DEV-BYPASS: publicNonces[i] must correspond to sortedKeys[i].
+                            val sortedFundingKeys = Scripts.sort(listOf(localFundingKey.publicKey(), commitment.remoteFundingPubkey))
+                            val orderedNonces = if (sortedFundingKeys.first() == localFundingKey.publicKey())
+                                listOf(localNonce.publicNonce, remoteNonce)
+                            else
+                                listOf(remoteNonce, localNonce.publicNonce)
+                            return tx.partialSign(localFundingKey, commitment.remoteFundingPubkey, mapOf(), localNonce, orderedNonces).right
                         }
 
                         TlvStream(
@@ -391,7 +397,13 @@ object Helpers {
                             if (!closingTx.checkRemotePartialSignature(localFundingKey.publicKey(), commitment.remoteFundingPubkey, remoteSig, localNonce.publicNonce)) {
                                 return Either.Left(InvalidCloseSignature(commitment.channelId, closingTx.tx.txid))
                             }
-                            val localSig = closingTx.partialSign(localFundingKey, commitment.remoteFundingPubkey, mapOf(), localNonce, listOf(localNonce.publicNonce, remoteSig.nonce)).right
+                            // DEV-BYPASS: publicNonces[i] must correspond to sortedKeys[i].
+                            val sortedFundingKeys2 = Scripts.sort(listOf(localFundingKey.publicKey(), commitment.remoteFundingPubkey))
+                            val orderedNonces2 = if (sortedFundingKeys2.first() == localFundingKey.publicKey())
+                                listOf(localNonce.publicNonce, remoteSig.nonce)
+                            else
+                                listOf(remoteSig.nonce, localNonce.publicNonce)
+                            val localSig = closingTx.partialSign(localFundingKey, commitment.remoteFundingPubkey, mapOf(), localNonce, orderedNonces2).right
                             val signedTx = localSig?.let { closingTx.aggregateSigs(localFundingKey.publicKey(), commitment.remoteFundingPubkey, it, remoteSig, mapOf()).right }
                             if (localSig == null || signedTx == null) {
                                 return Either.Left(InvalidCloseSignature(commitment.channelId, closingTx.tx.txid))

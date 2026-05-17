@@ -210,7 +210,13 @@ data class RemoteCommit(val index: Long, val spec: CommitmentSpec, val txid: TxI
                 null -> Either.Left(MissingCommitNonce(channelParams.channelId, commitInput.outPoint.txid, index))
                 else -> {
                     val localNonce = NonceGenerator.signingNonce(fundingKey.publicKey(), remoteFundingPubKey, commitInput.outPoint.txid)
-                    when (val psig = remoteCommitTx.partialSign(fundingKey, remoteFundingPubKey, mapOf(), localNonce, listOf(localNonce.publicNonce, remoteNonce))) {
+                    // DEV-BYPASS: publicNonces[i] must correspond to sortedKeys[i] — sort dynamically.
+                    val sortedFundingKeys = Scripts.sort(listOf(fundingKey.publicKey(), remoteFundingPubKey))
+                    val orderedNonces = if (sortedFundingKeys.first() == fundingKey.publicKey())
+                        listOf(localNonce.publicNonce, remoteNonce)
+                    else
+                        listOf(remoteNonce, localNonce.publicNonce)
+                    when (val psig = remoteCommitTx.partialSign(fundingKey, remoteFundingPubKey, mapOf(), localNonce, orderedNonces)) {
                         is Either.Left -> Either.Left(InvalidCommitNonce(channelParams.channelId, commitInput.outPoint.txid, index))
                         is Either.Right -> Either.Right(CommitSig(channelParams.channelId, psig.value, htlcSigs, batchSize))
                     }
@@ -603,7 +609,13 @@ data class Commitment(
                 null -> return Either.Left(MissingCommitNonce(params.channelId, fundingTxId, remoteCommit.index + 1))
                 else -> {
                     val localNonce = NonceGenerator.signingNonce(fundingKey.publicKey(), remoteFundingPubkey, fundingTxId)
-                    when (val psig = remoteCommitTx.partialSign(fundingKey, remoteFundingPubkey, mapOf(), localNonce, listOf(localNonce.publicNonce, nextRemoteNonce))) {
+                    // DEV-BYPASS: publicNonces[i] must correspond to sortedKeys[i] — sort dynamically.
+                    val sortedFundingKeys = Scripts.sort(listOf(fundingKey.publicKey(), remoteFundingPubkey))
+                    val orderedNonces = if (sortedFundingKeys.first() == fundingKey.publicKey())
+                        listOf(localNonce.publicNonce, nextRemoteNonce)
+                    else
+                        listOf(nextRemoteNonce, localNonce.publicNonce)
+                    when (val psig = remoteCommitTx.partialSign(fundingKey, remoteFundingPubkey, mapOf(), localNonce, orderedNonces)) {
                         is Either.Left -> return Either.Left(InvalidCommitNonce(params.channelId, fundingTxId, remoteCommit.index + 1))
                         is Either.Right -> psig.value
                     }

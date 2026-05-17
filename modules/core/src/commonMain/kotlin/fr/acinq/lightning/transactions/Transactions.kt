@@ -296,6 +296,12 @@ object Transactions {
             remoteSig: ChannelSpendSignature.PartialSignatureWithNonce,
             localNonce: IndividualNonce
         ): Boolean {
+            // DEV-BYPASS: publicNonces[i] must correspond to sortedKeys[i].
+            val sortedKeys = Scripts.sort(listOf(localFundingPubKey, remoteFundingPubKey))
+            val orderedNonces = if (sortedKeys.first() == localFundingPubKey)
+                listOf(localNonce, remoteSig.nonce)
+            else
+                listOf(remoteSig.nonce, localNonce)
             return Musig2.verify(
                 remoteSig.partialSig,
                 remoteSig.nonce,
@@ -303,8 +309,8 @@ object Transactions {
                 tx,
                 inputIndex,
                 listOf(input.txOut),
-                Scripts.sort(listOf(localFundingPubKey, remoteFundingPubKey)),
-                listOf(localNonce, remoteSig.nonce),
+                sortedKeys,
+                orderedNonces,
                 scriptTree = null
             )
         }

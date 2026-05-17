@@ -256,7 +256,9 @@ data class NodeParams(
         bolt12InvoiceExpiry = 24.hours,
         htlcMinimum = 1000.msat,
         minDepthBlocks = 8,
-        toRemoteDelayBlocks = CltvExpiryDelta(2016),
+        // DEV-BYPASS for BitEver test chain: 2016 blocks ~= 14 days is too long for testing.
+        // 144 blocks ~= 1 day still respects revocation safety. Affects newly opened channels only.
+        toRemoteDelayBlocks = CltvExpiryDelta(144),
         maxToLocalDelayBlocks = CltvExpiryDelta(1008),
         feeBase = 1000.msat,
         feeProportionalMillionths = 100,
