@@ -110,6 +110,17 @@ data class Negotiating(
                         publishedClosingTxs.any { it.tx.txid == watch.tx.txid } -> completeMutualClose(publishedClosingTxs.first { it.tx.txid == watch.tx.txid })
                         // A transaction that we proposed for which they didn't send us their signature was confirmed, the channel is now closed.
                         proposedClosingTxs.flatMap { it.all }.any { it.tx.txid == watch.tx.txid } -> completeMutualClose(getMutualClosePublished(watch.tx))
+                        // [LightningEver fallback] simple_close + reconnect race: the counterparty may have
+                        // re-built and broadcast a closing tx with a different signature/txid than what we
+                        // last signed (e.g. after our ChannelReestablish caused another shutdown round).
+                        // If that tx is confirmed AND spends our funding output, the channel is effectively
+                        // closed via mutual close — recognise it instead of staying stuck in NEGOTIATING.
+                        watch.tx.txIn.any { it.outPoint == commitments.latest.fundingInput } -> {
+                            logger.warning { "unknown closing tx ${watch.tx.txid} confirmed but spends our funding output — recognising as mutual close" }
+                            val toLocalIdx = watch.tx.txOut.indexOfFirst { it.publicKeyScript == localScript }.takeIf { it >= 0 }
+                            val fallbackClosingTx = Transactions.ClosingTx(commitments.latest.commitInput(channelKeys()), watch.tx, toLocalIdx)
+                            completeMutualClose(fallbackClosingTx)
+                        }
                         else -> {
                             logger.warning { "unknown closing transaction confirmed with txId=${watch.tx.txid}" }
                             Pair(this@Negotiating, listOf())
@@ -131,6 +142,22 @@ data class Negotiating(
                             val actions = listOf(
                                 ChannelAction.Storage.StoreState(nextState),
                                 ChannelAction.Blockchain.PublishTx(closingTx),
+                                ChannelAction.Blockchain.SendWatch(WatchConfirmed(channelId, watch.spendingTx, staticParams.nodeParams.minDepthBlocks, WatchConfirmed.ClosingTxConfirmed))
+                            )
+                            Pair(nextState, actions)
+                        }
+                        // [LightningEver fallback] Same race as the WatchConfirmedTriggered branch above:
+                        // an unknown spending tx that pays out to our localScript (and an output we don't
+                        // recognise as a commit) is the counterparty's mutual-close variant. Register a
+                        // WatchConfirmed for it so the unknown-tx branch above will recognise the
+                        // confirmation and complete the close instead of falling into force-close handling.
+                        watch.spendingTx.txOut.any { it.publicKeyScript == localScript } -> {
+                            logger.warning { "unknown spending tx ${watch.spendingTx.txid} pays to our localScript — treating as counterparty mutual-close variant" }
+                            val toLocalIdx = watch.spendingTx.txOut.indexOfFirst { it.publicKeyScript == localScript }.takeIf { it >= 0 }
+                            val closingTx = Transactions.ClosingTx(commitments.latest.commitInput(channelKeys()), watch.spendingTx, toLocalIdx)
+                            val nextState = this@Negotiating.copy(publishedClosingTxs = publishedClosingTxs + closingTx)
+                            val actions = listOf(
+                                ChannelAction.Storage.StoreState(nextState),
                                 ChannelAction.Blockchain.SendWatch(WatchConfirmed(channelId, watch.spendingTx, staticParams.nodeParams.minDepthBlocks, WatchConfirmed.ClosingTxConfirmed))
                             )
                             Pair(nextState, actions)

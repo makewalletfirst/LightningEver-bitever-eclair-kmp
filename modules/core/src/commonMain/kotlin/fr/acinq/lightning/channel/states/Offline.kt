@@ -6,6 +6,7 @@ import fr.acinq.lightning.blockchain.WatchConfirmed
 import fr.acinq.lightning.blockchain.WatchConfirmedTriggered
 import fr.acinq.lightning.blockchain.WatchSpentTriggered
 import fr.acinq.lightning.channel.*
+import fr.acinq.lightning.transactions.Transactions
 import fr.acinq.lightning.wire.Error
 
 data class Offline(val state: PersistedChannelState) : ChannelState() {
@@ -81,6 +82,14 @@ data class Offline(val state: PersistedChannelState) : ChannelState() {
                             state is Negotiating && state.proposedClosingTxs.flatMap { it.all }.any { it.tx.txid == watch.tx.txid } -> {
                                 // A transaction that we proposed for which they didn't send us their signature was confirmed, the channel is now closed.
                                 state.run { completeMutualClose(getMutualClosePublished(watch.tx)) }
+                            }
+                            // [LightningEver fallback] simple_close + reconnect race — see Negotiating.kt for details.
+                            // If the confirmed tx spends our funding output, recognise it as a mutual close completion.
+                            state is Negotiating && watch.tx.txIn.any { it.outPoint == state.commitments.latest.fundingInput } -> {
+                                logger.warning { "unknown closing tx ${watch.tx.txid} confirmed but spends our funding output — recognising as mutual close" }
+                                val toLocalIdx = watch.tx.txOut.indexOfFirst { it.publicKeyScript == state.localScript }.takeIf { it >= 0 }
+                                val fallbackClosingTx = Transactions.ClosingTx(state.commitments.latest.commitInput(state.run { channelKeys() }), watch.tx, toLocalIdx)
+                                state.run { completeMutualClose(fallbackClosingTx) }
                             }
                             else -> {
                                 logger.warning { "unknown closing transaction confirmed with txId=${watch.tx.txid}" }
